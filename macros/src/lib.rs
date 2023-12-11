@@ -1,4 +1,4 @@
-extern crate self as signals;
+
 use proc_macro::TokenStream;
 use quote::{format_ident, quote, ToTokens};
 use syn::{parse_macro_input, parse_quote, ItemImpl, TraitItemFn};
@@ -63,8 +63,8 @@ pub fn object(_attrs: TokenStream, input: TokenStream) -> TokenStream {
 
                 items.push(parse_quote! {
                     #[allow(unused_variables)]
-                    #sig {
-                        signals::Runtime::current().emit(Box::new((#(#input_pats),*)))
+                    pub #sig {
+                        signal_slot::Runtime::current().emit(Box::new((#(#input_pats),*)))
                     }
                 });
 
@@ -74,8 +74,8 @@ pub fn object(_attrs: TokenStream, input: TokenStream) -> TokenStream {
                 });
                 let ident = sig.ident;
                 sender_items.push(parse_quote! {
-                    fn #ident(&self) -> signals::Signal<(#(#input_tys),*)> {
-                        signals::Signal::new(self.handle.key)
+                    pub fn #ident(&self) -> signal_slot::Signal<(#(#input_tys),*)> {
+                        signal_slot::Signal::new(self.handle.key)
                     }
                 });
             }

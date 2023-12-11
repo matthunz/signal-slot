@@ -21,15 +21,15 @@ dependencies = [
 ]
 
 [[package]]
-name = "signals"
+name = "signal-slot"
 version = "0.1.0"
 dependencies = [
- "signals-macros",
+ "signal-slot-macros",
  "slotmap",
 ]
 
 [[package]]
-name = "signals-macros"
+name = "signal-slot-macros"
 version = "0.1.0"
 dependencies = [
  "quote",

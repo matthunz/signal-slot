@@ -1,6 +1,9 @@
-pub use signals_macros::object;
+extern crate self as signal_slot;
+
 use slotmap::{DefaultKey, SlotMap};
 use std::{any::Any, cell::RefCell, marker::PhantomData, mem, ops::Deref, rc::Rc};
+
+pub use signal_slot_macros::object;
 
 pub struct HandleState<O: Object> {
     pub key: DefaultKey,
