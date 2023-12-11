@@ -1,4 +1,4 @@
-use signals::{emit, HandleState, Object, UserInterface};
+use signals::{emit, HandleState, Object, Runtime};
 use signals_macros::signal;
 
 #[derive(Debug)]
@@ -29,5 +29,5 @@ fn main() {
 
     counter.set(2);
 
-    UserInterface::current().run();
+    Runtime::current().run();
 }

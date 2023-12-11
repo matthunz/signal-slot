@@ -18,14 +18,15 @@ pub fn signal(attrs: TokenStream, input: TokenStream) -> TokenStream {
                 fn_item.sig.inputs[0] = parse_quote!(&self);
                 let block = fn_item.block.clone();
                 let fn_ident = &fn_item.sig.ident;
-                let inputs: Vec<_> = fn_item.sig.inputs.iter().filter_map(|arg| {
-                    match arg {
+                let inputs: Vec<_> = fn_item
+                    .sig
+                    .inputs
+                    .iter()
+                    .filter_map(|arg| match arg {
                         syn::FnArg::Receiver(r) => None,
-                        syn::FnArg::Typed(ty) => {
-                           Some( ty.pat.to_token_stream())
-                        }
-                    }
-                }).collect();
+                        syn::FnArg::Typed(ty) => Some(ty.pat.to_token_stream()),
+                    })
+                    .collect();
                 fn_item.block = parse_quote!({
                     let cx = self.handle;
                     self.handle.update(move |me| {

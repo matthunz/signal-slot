@@ -1,5 +1,5 @@
 pub use signals_macros::signal;
-use slotmap::{DefaultKey, Key, SlotMap};
+use slotmap::{DefaultKey, SlotMap};
 use std::{any::Any, cell::RefCell, marker::PhantomData, mem, ops::Deref, rc::Rc};
 
 pub struct HandleState<O: Object> {
@@ -20,7 +20,7 @@ impl<O: Object> HandleState<O> {
     where
         O: 'static,
     {
-        UserInterface::current().inner.borrow_mut().updates.push((
+        Runtime::current().inner.borrow_mut().updates.push((
             self.key,
             Box::new(move |element| f(element.downcast_mut().unwrap())),
         ))
@@ -38,7 +38,7 @@ impl<O: Object> Handle<O> {
     where
         O: 'static,
     {
-        UserInterface::current().inner.borrow_mut().updates.push((
+        Runtime::current().inner.borrow_mut().updates.push((
             self.key,
             Box::new(move |element| f(element.downcast_mut().unwrap())),
         ))
@@ -48,7 +48,7 @@ impl<O: Object> Handle<O> {
     where
         O::Message: 'static,
     {
-        UserInterface::current().inner.borrow_mut().nodes[self.key]
+        Runtime::current().inner.borrow_mut().nodes[self.key]
             .listeners
             .push(Box::new(move |msg| f(msg.downcast_ref().unwrap())))
     }
@@ -72,14 +72,10 @@ pub trait Object: Sized {
     where
         Self: 'static,
     {
-        let key = UserInterface::current()
-            .inner
-            .borrow_mut()
-            .nodes
-            .insert(Node {
-                object: Rc::new(RefCell::new(self)),
-                listeners: Vec::new(),
-            });
+        let key = Runtime::current().inner.borrow_mut().nodes.insert(Node {
+            object: Rc::new(RefCell::new(self)),
+            listeners: Vec::new(),
+        });
 
         Handle {
             key,
@@ -121,14 +117,14 @@ struct Inner {
 }
 
 #[derive(Clone, Default)]
-pub struct UserInterface {
+pub struct Runtime {
     inner: Rc<RefCell<Inner>>,
 }
 
-impl UserInterface {
+impl Runtime {
     pub fn current() -> Self {
         thread_local! {
-            static CURRENT: RefCell<Option<UserInterface>> = RefCell::default();
+            static CURRENT: RefCell<Option<Runtime>> = RefCell::default();
         }
 
         CURRENT
@@ -173,6 +169,6 @@ impl UserInterface {
 macro_rules! emit {
     ($e:expr) => {
         let msg: <Self as signals::Object>::Message = $e;
-        signals::UserInterface::current().emit(Box::new(msg))
+        signals::Runtime::current().emit(Box::new(msg))
     };
 }
