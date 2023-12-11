@@ -1,4 +1,4 @@
-pub use signals_macros::signal;
+pub use signals_macros::object;
 use slotmap::{DefaultKey, SlotMap};
 use std::{any::Any, cell::RefCell, marker::PhantomData, mem, ops::Deref, rc::Rc};
 
@@ -33,6 +33,14 @@ pub struct Handle<O: Object> {
     _marker: PhantomData<O>,
 }
 
+impl<O: Object> Clone for Handle<O> {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+
+impl<O: Object> Copy for Handle<O> {}
+
 impl<O: Object> Handle<O> {
     pub fn update(&self, mut f: impl FnMut(&mut O) + 'static)
     where
@@ -42,15 +50,6 @@ impl<O: Object> Handle<O> {
             self.key,
             Box::new(move |element| f(element.downcast_mut().unwrap())),
         ))
-    }
-
-    pub fn listen(&self, mut f: impl FnMut(&O::Message) + 'static)
-    where
-        O::Message: 'static,
-    {
-        Runtime::current().inner.borrow_mut().nodes[self.key]
-            .listeners
-            .push(Box::new(move |msg| f(msg.downcast_ref().unwrap())))
     }
 }
 
@@ -63,10 +62,7 @@ impl<O: Object> Deref for Handle<O> {
 }
 
 pub trait Object: Sized {
-    type Message;
-    type Sender: From<HandleState<Self>>;
-
-    fn emit(&mut self, msg: Self::Message);
+    type Sender: From<HandleState<Self>> + Copy;
 
     fn spawn(self) -> Handle<Self>
     where
@@ -96,7 +92,6 @@ pub trait AnyObject {
 impl<O> AnyObject for O
 where
     O: Object + 'static,
-    O::Message: 'static,
 {
     fn as_any_mut(&mut self) -> &mut dyn Any {
         self
@@ -165,10 +160,8 @@ impl Runtime {
     }
 }
 
-#[macro_export]
-macro_rules! emit {
-    ($e:expr) => {
-        let msg: <Self as signals::Object>::Message = $e;
-        signals::Runtime::current().emit(Box::new(msg))
-    };
+pub struct Signal {}
+
+impl Signal {
+    pub fn bind<A, B>(&self, _a: A, _b: B) {}
 }

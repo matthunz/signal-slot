@@ -1,33 +1,29 @@
-use signals::{emit, HandleState, Object, Runtime};
-use signals_macros::signal;
-
-#[derive(Debug)]
-pub enum CounterMessage {
-    ValueChanged(i32),
-}
+use signals::{object, HandleState, Object, Runtime};
 
 #[derive(Default)]
 pub struct Counter {
     value: i32,
 }
 
-#[signal(CounterMessage)]
+#[object]
 impl Counter {
+    #[signal]
+    fn value_changed(&mut self, value: i32);
+
+    #[slot]
     pub fn set(&mut self, value: i32) {
         self.value = value;
-
-        emit!(CounterMessage::ValueChanged(value));
+        self.value_changed(value);
     }
 }
 
 fn main() {
-    let counter = Counter::default().spawn();
+    let a = Counter::default().spawn();
+    let b = Counter::default().spawn();
 
-    counter.listen(|msg| {
-        dbg!(msg);
-    });
+    a.value_changed().bind(b, Counter::set);
 
-    counter.set(2);
+    a.set(2);
 
     Runtime::current().run();
 }
