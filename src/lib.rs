@@ -9,11 +9,12 @@ pub struct HandleState<O: Object> {
 
 impl<O: Object> Clone for HandleState<O> {
     fn clone(&self) -> Self {
-        *self
+        Self {
+            key: self.key.clone(),
+            _marker: self._marker.clone(),
+        }
     }
 }
-
-impl<O: Object> Copy for HandleState<O> {}
 
 impl<O: Object> HandleState<O> {
     pub fn update(&self, mut f: impl FnMut(&mut O) + 'static)
@@ -35,11 +36,13 @@ pub struct Handle<O: Object> {
 
 impl<O: Object> Clone for Handle<O> {
     fn clone(&self) -> Self {
-        *self
+        Self {
+            key: self.key.clone(),
+            sender: self.sender.clone(),
+            _marker: self._marker.clone(),
+        }
     }
 }
-
-impl<O: Object> Copy for Handle<O> {}
 
 impl<O: Object> Handle<O> {
     pub fn update(&self, mut f: impl FnMut(&mut O) + 'static)
@@ -62,7 +65,7 @@ impl<O: Object> Deref for Handle<O> {
 }
 
 pub trait Object: Sized {
-    type Sender: From<HandleState<Self>> + Copy;
+    type Sender: From<HandleState<Self>> + Clone;
 
     fn spawn(self) -> Handle<Self>
     where
@@ -176,11 +179,12 @@ impl<T> Signal<T> {
 }
 
 impl<T: Clone + 'static> Signal<T> {
-    pub fn bind<O>(&self, handle: Handle<O>, slot: impl FnMut(&mut O, T) + 'static)
+    pub fn bind<O>(&self, handle: &Handle<O>, slot: impl FnMut(&mut O, T) + 'static)
     where
         O: Object + 'static,
     {
         let f = Rc::new(RefCell::new(slot));
+        let handle = handle.clone();
         Runtime::current().inner.borrow_mut().nodes[self.key]
             .listeners
             .push(Rc::new(RefCell::new(move |any: &dyn Any| {

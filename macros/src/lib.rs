@@ -1,14 +1,10 @@
 extern crate self as signals;
-
 use proc_macro::TokenStream;
 use quote::{format_ident, quote, ToTokens};
-use syn::{
-    parse_macro_input, parse_quote, token::Type, Ident, Item, ItemImpl, ItemTrait, PatType,
-    TraitItemFn,
-};
+use syn::{parse_macro_input, parse_quote, ItemImpl, TraitItemFn};
 
 #[proc_macro_attribute]
-pub fn object(attrs: TokenStream, input: TokenStream) -> TokenStream {
+pub fn object(_attrs: TokenStream, input: TokenStream) -> TokenStream {
     let item = parse_macro_input!(input as ItemImpl);
 
     let mut items = Vec::new();
@@ -45,7 +41,6 @@ pub fn object(attrs: TokenStream, input: TokenStream) -> TokenStream {
                         })
                         .collect();
                     fn_item.block = parse_quote!({
-                        let cx = self.handle;
                         self.handle.update(move |me| {
                             me.#fn_ident(#(#inputs)*)
                         });
@@ -99,7 +94,7 @@ pub fn object(attrs: TokenStream, input: TokenStream) -> TokenStream {
             #(#items)*
         }
 
-        #[derive(Clone, Copy)]
+        #[derive(Clone)]
         pub struct #sender_ident {
             handle: HandleState<#ident>,
         }

@@ -22,7 +22,7 @@ fn main() {
     let a = Counter::default().spawn();
     let b = Counter::default().spawn();
 
-    a.value_changed().bind(b, Counter::set);
+    a.value_changed().bind(&b, Counter::set);
 
     a.set(2);
 
