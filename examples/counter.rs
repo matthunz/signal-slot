@@ -16,7 +16,7 @@ impl Counter {
     pub fn set(&mut self, value: i32) {
         self.value = value;
 
-        emit!(CounterMessage::ValueChanged(1));
+        emit!(CounterMessage::ValueChanged(value));
     }
 }
 
@@ -28,4 +28,6 @@ fn main() {
     });
 
     counter.set(2);
+
+    UserInterface::current().run();
 }
