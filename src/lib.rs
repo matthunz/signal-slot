@@ -1,6 +1,8 @@
 use slotmap::{DefaultKey, SlotMap};
 use std::{any::Any, cell::RefCell, marker::PhantomData, ops::Deref, rc::Rc};
 
+pub use signals_macros::signal;
+
 pub struct HandleState<O: Object> {
     key: DefaultKey,
     _marker: PhantomData<O>,
@@ -35,12 +37,7 @@ impl<O: Object> Handle<O> {
         ))
     }
 
-    pub fn bind<O2: Object>(
-        &self,
-        _other: &Handle<O2>,
-        _f: impl FnMut(&O::Message) -> O2::Message,
-    ) {
-    }
+    pub fn listen(&self, _f: impl FnMut(&O::Message)) {}
 }
 
 impl<O: Object> Deref for Handle<O> {
@@ -55,7 +52,7 @@ pub trait Object: Sized {
     type Message;
     type Sender: From<HandleState<Self>>;
 
-    fn handle(&mut self, msg: Self::Message);
+    fn emit(&mut self, msg: Self::Message);
 
     fn spawn(self) -> Handle<Self>
     where
@@ -81,8 +78,6 @@ pub trait Object: Sized {
 
 pub trait AnyObject {
     fn as_any_mut(&mut self) -> &mut dyn Any;
-
-    fn handle_any(&mut self, msg: Box<dyn Any>);
 }
 
 impl<O> AnyObject for O
@@ -92,10 +87,6 @@ where
 {
     fn as_any_mut(&mut self) -> &mut dyn Any {
         self
-    }
-
-    fn handle_any(&mut self, msg: Box<dyn Any>) {
-        self.handle(*msg.downcast().unwrap())
     }
 }
 
@@ -129,4 +120,9 @@ impl UserInterface {
             })
             .unwrap()
     }
+}
+
+#[macro_export]
+macro_rules! emit {
+    ($e:expr) => {};
 }

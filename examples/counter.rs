@@ -1,26 +1,9 @@
-use signals::{HandleState, Object};
+use signals::{emit, HandleState, Object, UserInterface};
+use signals_macros::signal;
 
-#[derive(Clone)]
+#[derive(Debug)]
 pub enum CounterMessage {
     ValueChanged(i32),
-}
-
-pub struct CounterSender {
-    handle: HandleState<Counter>,
-}
-
-impl From<HandleState<Counter>> for CounterSender {
-    fn from(value: HandleState<Counter>) -> Self {
-        Self { handle: value }
-    }
-}
-
-impl CounterSender {
-    pub fn set(&self, value: i32) {
-        self.handle.update(move |me| {
-            me.value = value;
-        });
-    }
 }
 
 #[derive(Default)]
@@ -28,18 +11,21 @@ pub struct Counter {
     value: i32,
 }
 
-impl Object for Counter {
-    type Message = CounterMessage;
-    type Sender = CounterSender;
+#[signal(CounterMessage)]
+impl Counter {
+    pub fn set(&mut self, value: i32) {
+        self.value = value;
 
-    fn handle(&mut self, _msg: Self::Message) {}
+        emit!(CounterMessage::ValueChanged(1));
+    }
 }
 
 fn main() {
-    let a = Counter::default().spawn();
-    let b = Counter::default().spawn();
+    let counter = Counter::default().spawn();
 
-    a.bind(&b, |msg| msg.clone());
+    counter.listen(|msg| {
+        dbg!(msg);
+    });
 
-    a.set(2);
+    counter.set(2);
 }
