@@ -1,7 +1,14 @@
 extern crate self as signal_slot;
 
 use slotmap::{DefaultKey, SlotMap};
-use std::{any::Any, cell::RefCell, marker::PhantomData, mem, ops::Deref, rc::Rc};
+use std::{
+    any::Any,
+    cell::{self, RefCell},
+    marker::PhantomData,
+    mem,
+    ops::Deref,
+    rc::Rc,
+};
 
 pub use signal_slot_macros::object;
 
@@ -29,33 +36,57 @@ impl<O: Object> HandleState<O> {
             Box::new(move |element| f(element.downcast_mut().unwrap())),
         ))
     }
+
+    pub fn borrow(&self) -> Ref<O> {
+        let rc = Runtime::current().inner.borrow().nodes[self.key]
+            .object
+            .clone();
+        let r = unsafe {
+            mem::transmute(cell::Ref::map(rc.borrow(), |object| {
+                object.as_any().downcast_ref::<O>().unwrap()
+            }))
+        };
+        Ref { rc, r }
+    }
+}
+
+pub struct Ref<O: 'static> {
+    rc: Rc<RefCell<dyn AnyObject>>,
+    r: cell::Ref<'static, O>,
+}
+
+impl<O: 'static> Deref for Ref<O> {
+    type Target = O;
+
+    fn deref(&self) -> &Self::Target {
+        &*self.r
+    }
 }
 
 pub struct Handle<O: Object> {
-    key: DefaultKey,
+    state: HandleState<O>,
     sender: O::Sender,
-    _marker: PhantomData<O>,
 }
 
 impl<O: Object> Clone for Handle<O> {
     fn clone(&self) -> Self {
         Self {
-            key: self.key.clone(),
+            state: self.state.clone(),
             sender: self.sender.clone(),
-            _marker: self._marker.clone(),
         }
     }
 }
 
 impl<O: Object> Handle<O> {
-    pub fn update(&self, mut f: impl FnMut(&mut O) + 'static)
+    pub fn update(&self, f: impl FnMut(&mut O) + 'static)
     where
         O: 'static,
     {
-        Runtime::current().inner.borrow_mut().updates.push((
-            self.key,
-            Box::new(move |element| f(element.downcast_mut().unwrap())),
-        ))
+        self.state.update(f)
+    }
+
+    pub fn borrow(&self) -> Ref<O> {
+        self.state.borrow()
     }
 }
 
@@ -80,18 +111,22 @@ pub trait Object: Sized {
         });
 
         Handle {
-            key,
+            state: HandleState {
+                key,
+                _marker: PhantomData,
+            },
             sender: HandleState {
                 key,
                 _marker: PhantomData,
             }
             .into(),
-            _marker: PhantomData,
         }
     }
 }
 
 pub trait AnyObject {
+    fn as_any(&self) -> &dyn Any;
+
     fn as_any_mut(&mut self) -> &mut dyn Any;
 }
 
@@ -99,6 +134,10 @@ impl<O> AnyObject for O
 where
     O: Object + 'static,
 {
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+
     fn as_any_mut(&mut self) -> &mut dyn Any {
         self
     }
