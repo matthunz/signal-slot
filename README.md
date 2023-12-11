@@ -1,7 +1,7 @@
 # signal-slot
 
 ```rust
-use signal_slot::{object, HandleState, Object, Runtime};
+use signal_slot::{object, Object, Runtime};
 
 #[derive(Default)]
 pub struct Counter {

@@ -96,11 +96,11 @@ pub fn object(_attrs: TokenStream, input: TokenStream) -> TokenStream {
 
         #[derive(Clone)]
         pub struct #sender_ident {
-            handle: HandleState<#ident>,
+            handle: signal_slot::HandleState<#ident>,
         }
 
-        impl From<HandleState<#ident>> for #sender_ident {
-            fn from(value: HandleState<#ident>) -> Self {
+        impl From<signal_slot::HandleState<#ident>> for #sender_ident {
+            fn from(value: signal_slot::HandleState<#ident>) -> Self {
                 Self { handle: value }
             }
         }
